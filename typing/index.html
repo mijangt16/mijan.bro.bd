@@ -1,1 +1,385 @@
 
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>বাংলা লেখা অনুশীলন</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600&display=swap">
+<style>
+:root{--bg:#faf8f3;--card:#fff;--text:#222;--muted:#6b6b6b;--line:#e2ddd0;--accent:#1d6b4f;--ok:#1d7a46;--okbg:#dff3e6;--bad:#b3261e;--badbg:#fbdcd9;--cur:#fff0b8;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16181a;--card:#202325;--text:#eceae4;--muted:#9a9a94;--line:#34383b;--accent:#5cc79a;--ok:#7fdca5;--okbg:#1f3b2c;--bad:#ff8f86;--badbg:#4a2523;--cur:#4d4318}}
+:root[data-theme="dark"]{--bg:#16181a;--card:#202325;--text:#eceae4;--muted:#9a9a94;--line:#34383b;--accent:#5cc79a;--ok:#7fdca5;--okbg:#1f3b2c;--bad:#ff8f86;--badbg:#4a2523;--cur:#4d4318}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans Bengali","Kalpurush","Siyam Rupali",system-ui,sans-serif;line-height:1.7}
+main{max-width:760px;margin:0 auto;padding:56px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px;color:var(--accent)}
+p.sub{margin:0 0 18px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+textarea{width:100%;box-sizing:border-box;font:inherit;font-size:1.15rem;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);resize:vertical}
+textarea:focus{outline:2px solid var(--accent)}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);padding:9px 18px;margin:8px 8px 0 0}
+button.ghost{background:transparent;color:var(--accent)}
+.ref{font-size:1.35rem;line-height:2.1;word-break:break-word;white-space:pre-wrap;height:10rem;min-height:80px;resize:vertical;overflow-y:auto;position:relative;scroll-behavior:smooth}
+.ref span.ok{background:var(--okbg);color:var(--ok)}
+.ref span.bad{background:var(--badbg);color:var(--bad)}
+.ref span.cur{background:var(--cur);border-bottom:2px solid var(--accent)}
+.stats{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.stat{flex:1 0 62px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 4px;text-align:center}
+.stat b{display:block;font-size:1.05rem;line-height:1.5;color:var(--accent)}
+.stat small{color:var(--muted);font-size:.72rem;white-space:nowrap}
+.bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:12px}
+.bar div{height:100%;width:0;background:var(--accent);transition:width .15s}
+.done{display:none;border-color:var(--accent)}
+.hide{display:none}
+label{font-weight:600}
+body.hide-live .live{display:none}
+.mode{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:20;display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 2px 10px rgba(0,0,0,.18);opacity:.85;transition:opacity .15s}
+.mode:hover{opacity:1}
+.mode button{margin:0;padding:5px 14px;border-radius:999px;background:transparent;color:var(--muted);border:0}
+.mode button.on{background:var(--accent);color:var(--bg)}
+#report div{padding:4px 0;border-bottom:1px dashed var(--line)}
+.histbtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;z-index:20;margin:0;padding:5px 14px;border-radius:999px;background:var(--card);color:var(--accent);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.18);opacity:.85}
+.histbtn:hover{opacity:1}
+.info{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin-top:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;font-size:.95rem}
+.info b{color:var(--accent)}
+.info input{width:64px;font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text)}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
+.hs .stat{flex:1 0 96px}
+.chbox{position:relative;margin-top:6px}
+.chbox svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.tip{position:absolute;top:4px;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:.8rem;line-height:1.5;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.22);display:none;z-index:5}
+.lg{display:inline-flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.hf{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center}
+.hf button{margin:0;padding:4px 12px;border-radius:999px;background:transparent;color:var(--accent);font-size:.9rem}
+.hf button.on{background:var(--accent);color:var(--bg)}
+.hf input,.hf select{font:inherit;font-size:.9rem;padding:3px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text)}
+.hf input{width:60px}
+.hset{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px 12px;margin-top:8px}
+.hset label{font-weight:400;display:flex;gap:6px;align-items:center}
+.ht th{position:sticky;top:0;background:var(--card)}
+.ht{width:100%;border-collapse:collapse;font-size:.9rem;white-space:nowrap}
+.ht th,.ht td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.wr{color:var(--bad);background:var(--badbg);border-radius:4px;padding:0 5px}
+.gr{color:var(--ok);background:var(--okbg);border-radius:4px;padding:0 5px}
+</style>
+</head>
+<body>
+<div class="mode" role="group" aria-label="মোড"><button id="mPr" class="on">অনুশীলন</button><button id="mEx">পরীক্ষা</button></div>
+<button id="hBtn" class="histbtn">হিস্টরি</button>
+<main>
+<h1>বাংলা লেখা অনুশীলন</h1>
+<p class="sub">যেকোনো বাংলা লেখা বসান, তারপর নিচের ঘরে দেখে দেখে টাইপ করুন।</p>
+
+<section id="setup" class="card">
+  <label for="src">অনুশীলনের লেখা</label>
+  <textarea id="src" rows="5" placeholder="এখানে আপনার বাংলা লেখাটি পেস্ট করুন…"></textarea>
+  <div class="info">
+    <span>শব্দ (৫ অক্ষর = ১): <b id="iW">0</b></span>
+    <span>অক্ষর (স্পেস ছাড়া): <b id="iC">0</b></span>
+    <span>প্রতি মিনিটে <input id="spd" type="number" min="1" value="100"> অক্ষর লিখলে সময় লাগবে: <b id="iT">—</b></span>
+  </div>
+  <button id="start">শুরু করুন</button>
+  <button id="sample" class="ghost">নমুনা লেখা</button>
+</section>
+
+<section id="practice" class="hide">
+  <div class="stats live">
+    <div class="stat"><b id="sAcc">100%</b><small>নির্ভুলতা</small></div>
+    <div class="stat"><b id="sWpm">0</b><small>মোট WPM</small></div>
+    <div class="stat"><b id="sNet">0</b><small>নিট WPM</small></div>
+    <div class="stat"><b id="sTime">0:00</b><small>সময়</small></div>
+    <div class="stat"><b id="sWords">0</b><small>মোট শব্দ</small></div>
+    <div class="stat"><b id="sOk">0</b><small>সঠিক শব্দ</small></div>
+    <div class="stat"><b id="sBad">0</b><small>ভুল শব্দ</small></div>
+    <div class="stat"><b id="sErr">0</b><small>ভুল অক্ষর</small></div>
+  </div>
+  <div class="bar live"><div id="prog"></div></div>
+  <div class="card"><div id="ref" class="ref" aria-label="অনুশীলনের লেখা"></div></div>
+  <textarea id="inp" rows="5" placeholder="এখানে টাইপ করুন…" spellcheck="false" autocomplete="off"></textarea>
+  <button id="submit" class="hide">জমা দিন (Enter)</button><button id="reset" class="ghost">আবার শুরু</button>
+  <button id="back" class="ghost">নতুন লেখা দিন</button>
+  <div id="done" class="card done" style="margin-top:14px"><span id="doneMsg"></span><div id="report" style="margin-top:8px"></div></div>
+</section>
+<section id="history" class="hide">
+  <h2 style="color:var(--accent);margin:0 0 4px;font-size:1.25rem">হিস্টরি ও অগ্রগতি</h2>
+  <div id="hBody"></div>
+  <button id="hBack" class="ghost">ফিরে যান</button><button id="hClear" class="ghost">হিস্টরি মুছুন</button>
+</section>
+</main>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var seg=(typeof Intl!=="undefined"&&Intl.Segmenter)?new Intl.Segmenter("bn",{granularity:"grapheme"}):null;
+  function norm(s){return s.normalize("NFC").replace(/\u09DC/g,"\u09A1\u09BC").replace(/\u09DD/g,"\u09A2\u09BC").replace(/\u09DF/g,"\u09AF\u09BC")}
+  function split(s){s=norm(s);return seg?Array.from(seg.segment(s),function(x){return x.segment}):Array.from(s)}
+  function cl(g){return Array.from(g).length+(g.match(/[\u09CB\u09CC]/g)||[]).length}
+  function W(a){var n=0;a.forEach(function(g){n+=cl(g)});return n}
+  function NS(a){return W(a.filter(function(x){return !/^\s+$/.test(x)}))}
+  function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+  var target=[],words=[],t0=null,timer=null,finished=false,exam=false,tDone=null,ready=false;
+  var SAMPLE="আমার সোনার বাংলা, আমি তোমায় ভালোবাসি। বাংলা আমাদের মাতৃভাষা। প্রতিদিন একটু একটু করে লিখলে হাতের আর মনের জড়তা কেটে যায়।";
+  try{var saved=localStorage.getItem("bn-text");if(saved)$("src").value=saved}catch(e){}
+
+  function show(on){$("setup").classList.toggle("hide",on);$("practice").classList.toggle("hide",!on);$("history").classList.add("hide")}
+  function fmt(s){return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0")}
+
+  function build(){
+    words=[];var cur=null;
+    target.forEach(function(g,i){
+      if(/^\s+$/.test(g)){cur=null}
+      else{if(!cur){cur={s:i,g:[]};words.push(cur)}cur.g.push(g)}
+    });
+    words.forEach(function(w){w.t=w.g.join("")});
+  }
+
+  // শব্দ-ভিত্তিক মিল: একটি শব্দ বাদ/বাড়তি হলেও পরের শব্দ ঠিকভাবে মেলে
+  function align(){
+    var n0=norm($("inp").value),toks=n0.split(/\s+/).filter(Boolean),partial=null;
+    if(!finished&&toks.length&&!/\s$/.test(n0))partial=toks.pop();
+    var n=toks.length,m=words.length,D=[],i,j;
+    for(i=0;i<=n;i++){D[i]=[];for(j=0;j<=m;j++){
+      if(i===0)D[i][j]=j;else if(j===0)D[i][j]=i;
+      else D[i][j]=Math.min(D[i-1][j-1]+(toks[i-1]===words[j-1].t?0:1),D[i-1][j]+1,D[i][j-1]+1);
+    }}
+    var jEnd=m;
+    if(!finished){var best=1e9;for(j=0;j<=m;j++){if(D[n][j]<=best){best=D[n][j];jEnd=j}}}
+    var st=[],ins=[];for(j=0;j<m;j++)st[j]=null;
+    var a=n,b=jEnd;
+    while(a>0||b>0){
+      if(a>0&&b>0&&D[a][b]===D[a-1][b-1]+(toks[a-1]===words[b-1].t?0:1)){
+        st[b-1]={k:toks[a-1]===words[b-1].t?"m":"s",typed:toks[a-1]};a--;b--;
+      }else if(b>0&&D[a][b]===D[a][b-1]+1){st[b-1]={k:"d"};b--}
+      else{ins.push({typed:toks[a-1],at:b});a--}
+    }
+    return{st:st,ins:ins.reverse(),jEnd:jEnd,partial:partial,toks:toks};
+  }
+  function isPrefix(p,w){if(p.length>w.length)return false;for(var k=0;k<p.length;k++)if(p[k]!==w[k])return false;return true}
+  function same(x,y){var c=0;for(var k=0;k<x.length;k++)if(x[k]===y[k])c+=cl(x[k]);return c}
+
+  function calc(a){
+    var ok=0,bad=0,okC=0,errC=0,totC=0;
+    a.st.forEach(function(s,j){
+      if(!s)return;var w=words[j];
+      if(s.k==="m"){ok++;okC+=W(w.g);totC+=W(w.g)}
+      else if(s.k==="s"){var tg=split(s.typed),c=same(tg,w.g),mx=Math.max(W(tg),W(w.g));bad+=Math.ceil(mx/5);okC+=c;totC+=W(tg);errC+=mx-c}
+      else{bad+=Math.ceil(W(w.g)/5);errC+=W(w.g)}
+    });
+    a.ins.forEach(function(o){var l=W(split(o.typed));bad+=Math.ceil(l/5);totC+=l;errC+=l});
+    if(a.partial){
+      var cw=words[a.jEnd],pg=split(a.partial),pl=W(pg);totC+=pl;
+      if(cw&&cw.t===a.partial){ok++;okC+=pl}
+      else if(cw&&isPrefix(pg,cw.g)){okC+=pl}
+      else{bad+=Math.ceil(Math.max(pl,cw?W(cw.g):0)/5);var c2=cw?same(pg,cw.g):0;okC+=c2;errC+=pl-c2}
+    }
+    return{ok:ok,bad:bad,okC:okC,errC:errC,totC:totC,total:a.toks.length+(a.partial?1:0)};
+  }
+
+  function render(){
+    var a=align(),h="",hide=exam&&!finished,at={},curI=-1;
+    if(!finished&&a.jEnd<words.length){var cw=words[a.jEnd],pl=a.partial?split(a.partial).length:0;curI=cw.s+Math.min(pl,cw.g.length-1)}
+    words.forEach(function(w,j){for(var k=0;k<w.g.length;k++)at[w.s+k]=[j,k]});
+    for(var i=0;i<target.length;i++){
+      var g=target[i],cls="",p=at[i];
+      if(p&&!hide){
+        var j=p[0],k=p[1],s=a.st[j];
+        if(s){
+          if(s.k==="m")cls="ok";
+          else if(s.k==="s")cls=split(s.typed)[k]===g?"ok":"bad";
+          else cls="bad";
+        }else if(j===a.jEnd&&!finished){
+          var pg=a.partial?split(a.partial):[];
+          if(k<pg.length)cls=pg[k]===g?"ok":"bad";
+          else if(k===pg.length)cls="cur";
+        }
+      }
+      h+='<span class="'+cls+'"'+(i===curI?' id="curc"':'')+'>'+esc(g)+'</span>';
+    }
+    $("ref").innerHTML=h;
+    var r=$("ref"),cc=$("curc");
+    if(finished){r.scrollTop=0}
+    else if(cc){var tp=cc.offsetTop,bt=tp+cc.offsetHeight;if(bt>r.scrollTop+r.clientHeight-10||tp<r.scrollTop)r.scrollTop=Math.max(0,tp-r.clientHeight/3)}
+  }
+
+  function stats(){
+    var a=align(),c=calc(a),el=t0?((tDone||Date.now())-t0)/1000:0,len=NS(split($("inp").value));
+    var gross=el>2?Math.round(len/5/(el/60)):0; // ৫ অক্ষর = ১ শব্দ
+    $("sAcc").textContent=c.totC?Math.round(c.okC/c.totC*100)+"%":"100%";
+    $("sWpm").textContent=gross;
+    $("sNet").textContent=Math.max(0,gross-c.bad); // প্রতি ভুল শব্দে ১ WPM কম
+    $("sTime").textContent=fmt(el);
+    $("sWords").textContent=Math.round(len/5*10)/10;$("sOk").textContent=Math.max(0,Math.round((len/5-c.bad)*10)/10);$("sBad").textContent=c.bad;
+    $("sErr").textContent=c.errC;
+    $("prog").style.width=Math.min(100,len/Math.max(1,NS(target))*100)+"%";
+  }
+
+  function report(a){
+    var rows=[],n=0,insAt={};
+    a.ins.forEach(function(o){(insAt[o.at]=insAt[o.at]||[]).push(o.typed)});
+    function add(t){n++;if(rows.length<40)rows.push("<div>"+t+"</div>")}
+    for(var j=0;j<=words.length;j++){
+      (insAt[j]||[]).forEach(function(t){add("<span class=\"wr\">"+esc(t)+"</span>")});
+      var s=a.st[j];if(!s||s.k==="m")continue;
+      if(s.k==="s")add("<span class=\"gr\">"+esc(words[j].t)+"</span> <span class=\"wr\">"+esc(s.typed)+"</span>");
+      else add("<span class=\"gr\">"+esc(words[j].t)+"</span> <span class=\"wr\">—</span>");
+    }
+    $("report").innerHTML=n?"<b>ভুল শব্দের তালিকা ("+n+"টি):</b>"+rows.join("")+(n>40?"<div>…আরও "+(n-40)+"টি</div>":""):"<b>কোনো ভুল নেই!</b>";
+  }
+
+  function finish(){
+    if(finished)return;
+    finished=true;clearInterval(timer);document.body.classList.remove("hide-live");
+    $("inp").disabled=true;render();stats();report(align());saveHist();$("submit").classList.add("hide");
+    
+    $("done").style.display="block";
+  }
+
+  function check(){
+    if(!t0){t0=Date.now();timer=setInterval(stats,500)}
+    render();stats();
+    if(finished)return;
+    var a=align(),m=words.length,lw=words[m-1];
+    var done=(a.jEnd===m&&a.st[m-1]&&a.st[m-1].k!=="d")||(a.partial&&a.jEnd===m-1&&split(a.partial).length>=lw.g.length);
+    ready=done;
+    if(!exam){if(done){if(!tDone)tDone=Date.now()}else tDone=null;
+    $("submit").classList.toggle("hide",!done);stats()}
+  }
+
+  function reset(){
+    clearInterval(timer);t0=null;tDone=null;ready=false;finished=false;
+    $("inp").value="";$("inp").disabled=false;$("done").style.display="none";$("report").innerHTML="";
+    document.body.classList.toggle("hide-live",exam);$("submit").classList.toggle("hide",!exam);
+    render();stats();
+  }
+  function begin(){
+    var txt=$("src").value.replace(/\r/g,"").trim();
+    if(!txt){$("src").focus();return}
+    try{localStorage.setItem("bn-text",txt)}catch(e){}
+    target=split(txt);build();reset();show(true);$("inp").focus();
+  }
+  function setMode(e){
+    exam=e;
+    $("mPr").classList.toggle("on",!e);$("mEx").classList.toggle("on",e);
+    $("submit").classList.toggle("hide",!e);
+    if(!$("practice").classList.contains("hide")){reset();$("inp").focus()}
+  }
+  $("mPr").onclick=function(){setMode(false)};
+  $("mEx").onclick=function(){setMode(true)};
+  $("submit").onclick=function(){if(!finished&&$("inp").value)finish()};
+  
+  // ---- অক্ষর/শব্দ সংখ্যা ও সময়ের হিসাব ----
+  function info(){
+    var t=norm($('src').value.replace(/\r/g,'')).trim(),g=t?split(t):[];
+    var w=t?t.split(/\s+/).length:0,ns=NS(g);
+    var sp=Math.max(1,+$('spd').value||100),s=Math.round(ns/sp*60),mi=Math.floor(s/60);
+    $('iW').textContent=Math.round(ns/5*10)/10;$('iC').textContent=ns;
+    $('iT').textContent=g.length?(mi?mi+' মিনিট ':'')+(s%60)+' সেকেন্ড':'—';
+  }
+  $('src').addEventListener('input',info);$('spd').addEventListener('input',info);info();
+
+  // ---- হিস্টরি ও অগ্রগতি ----
+  function loadH(){try{return JSON.parse(localStorage.getItem('bn-hist')||'[]')}catch(e){return[]}}
+  function saveHist(){
+    var h=loadH(),el=t0?Math.round(((tDone||Date.now())-t0)/1000):0;
+    h.push({d:Date.now(),m:exam?'পরীক্ষা':'অনুশীলন',acc:parseInt($('sAcc').textContent)||0,wpm:+$('sWpm').textContent||0,net:+$('sNet').textContent||0,t:el,w:+$('sWords').textContent||0,bad:+$('sBad').textContent||0,ok:+$('sOk').textContent||0,err:+$('sErr').textContent||0,ch:NS(split($('inp').value)),c:NS(target)});
+    try{localStorage.setItem('bn-hist',JSON.stringify(h.slice(-5000)))}catch(e){}
+  }
+  var INFO=[];
+  var CW=640,CHT=250,PL=44,PR=14,PT=14,PB=30;
+  function r1(x){return Math.round(x*10)/10}
+  function dur(t){t=Math.round(t);var h=Math.floor(t/3600),m=Math.floor(t%3600/60),sc=t%60;return (h?h+'ঘ ':'')+(h||m?m+'মি ':'')+sc+'সে'}
+  function ch(r){return r.ch!=null?r.ch:Math.round((r.w||0)*5)}
+  function dt(d){try{return new Date(d).toLocaleString('bn-BD',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'})}catch(e){return new Date(d).toLocaleString()}}
+  function card(v,l){return '<div class="stat"><b>'+v+'</b><small>'+l+'</small></div>'}
+  function nice(m){if(m<=0)return 1;var e=Math.pow(10,Math.floor(Math.log(m)/Math.LN10)),f=m/e;return (f<=1?1:f<=2?2:f<=5?5:10)*e}
+  function ma(a,k){return a.map(function(_,i){var sl=a.slice(Math.max(0,i-k+1),i+1);return r1(sl.reduce(function(x,y){return x+y},0)/sl.length)})}
+  function mk(o){
+    var n=o.tips.length,pw=CW-PL-PR,ph=CHT-PT-PB,all=[1];
+    o.series.forEach(function(q){all=all.concat(q.v)});
+    var step=o.max?o.max/4:nice(Math.max.apply(null,all)/4),mx=o.max||step*4;
+    var bar=o.type==='bar';
+    var X=function(i){return bar?PL+(i+.5)*pw/n:PL+(n>1?i*pw/(n-1):pw/2)};
+    var Y=function(v){return PT+ph-Math.min(v,mx)/mx*ph};
+    var g='';
+    for(var t=0;t<=4;t++){var y=Y(step*t).toFixed(1);
+      g+='<line x1="'+PL+'" x2="'+(CW-PR)+'" y1="'+y+'" y2="'+y+'" stroke-dasharray="'+(t?'3 4':'0')+'" style="stroke:var(--line)"/><text x="'+(PL-8)+'" y="'+(+y+4)+'" text-anchor="end" font-size="11" style="fill:var(--muted)">'+r1(step*t)+'</text>';}
+    var ev=Math.ceil(n/8);
+    for(var i=0;i<n;i+=ev)g+='<text x="'+X(i).toFixed(1)+'" y="'+(CHT-10)+'" text-anchor="middle" font-size="11" style="fill:var(--muted)">'+o.labs[i]+'</text>';
+    o.series.forEach(function(q){
+      if(bar){var bw=Math.min(22,pw/n*.7);q.v.forEach(function(v,i){var hh=ph-(Y(v)-PT);g+='<rect x="'+(X(i)-bw/2).toFixed(1)+'" y="'+Y(v).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,hh).toFixed(1)+'" rx="2" style="fill:'+q.c+'"/>'});return}
+      var pts=q.v.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1)});
+      if(q.area&&n>1)g+='<polygon points="'+X(0).toFixed(1)+','+(PT+ph)+' '+pts.join(' ')+' '+X(n-1).toFixed(1)+','+(PT+ph)+'" style="fill:'+q.c+';opacity:.13"/>';
+      g+='<polyline fill="none" stroke-linejoin="round" stroke-linecap="round" stroke-width="'+(q.w||2)+'"'+(q.dash?' stroke-dasharray="6 4"':'')+' points="'+pts.join(' ')+'" style="stroke:'+q.c+'"/>';
+      if(n<=40&&!q.dash)q.v.forEach(function(v,i){g+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="3" stroke-width="1.5" style="fill:'+q.c+';stroke:var(--card)"/>'});
+    });
+    g+='<line class="guide" y1="'+PT+'" y2="'+(PT+ph)+'" stroke-dasharray="3 3" style="stroke:var(--muted);display:none"/>';
+    INFO.push({tips:o.tips,n:n,type:o.type});
+    var lg=o.series.map(function(q){return '<span><i style="background:'+q.c+'"></i>'+q.n+'</span>'}).join('');
+    return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px"><b>'+o.title+'</b><span class="lg">'+lg+'</span></div>'
+      +'<div class="chbox" data-i="'+(INFO.length-1)+'"><svg viewBox="0 0 '+CW+' '+CHT+'" role="img" aria-label="'+o.title+'">'+g+'</svg><div class="tip"></div></div></div>';
+  }
+  function attach(box){
+    var o=INFO[+box.dataset.i],svg=box.querySelector('svg'),tip=box.querySelector('.tip'),gd=svg.querySelector('.guide'),pw=CW-PL-PR;
+    function mv(e){
+      var t=e.touches?e.touches[0]:e,r=svg.getBoundingClientRect(),x=(t.clientX-r.left)/r.width*CW;
+      var i=o.type==='bar'?Math.floor((x-PL)/pw*o.n):Math.round((x-PL)/pw*(o.n-1));
+      if(o.n===1)i=0;i=Math.max(0,Math.min(o.n-1,i));
+      var gx=o.type==='bar'?PL+(i+.5)*pw/o.n:PL+(o.n>1?i*pw/(o.n-1):pw/2),pc=gx/CW*100;
+      gd.setAttribute('x1',gx);gd.setAttribute('x2',gx);gd.style.display='block';
+      tip.innerHTML=o.tips[i];tip.style.display='block';tip.style.left=pc+'%';
+      tip.style.transform=pc<22?'translateX(-8%)':pc>78?'translateX(-92%)':'translateX(-50%)';
+    }
+    function lv(){gd.style.display='none';tip.style.display='none'}
+    box.addEventListener('mousemove',mv);box.addEventListener('mouseleave',lv);
+    box.addEventListener('touchstart',mv,{passive:true});box.addEventListener('touchmove',mv,{passive:true});box.addEventListener('touchend',lv);
+  }
+  function drawHist(){
+    var all=loadH(),b=$('hBody');
+    if(!all.length){b.innerHTML='<div class="card">এখনো কোনো ফলাফল নেই। একটি অনুশীলন বা পরীক্ষা শেষ করলে গ্রাফ এখানে দেখা যাবে।</div>';return}
+    INFO=[];
+    var h=all.slice(-100),n=h.length,sum=function(f){return all.reduce(function(x,r){return x+(f(r)||0)},0)};
+    var html='<div class="stats hs">'+card(all.length,'মোট চেষ্টা')+card(dur(sum(function(r){return r.t})),'মোট সময়')+card(r1(sum(function(r){return r.w})),'মোট শব্দ')+card(sum(ch),'মোট অক্ষর')+card(sum(function(r){return r.bad}),'মোট ভুল শব্দ')+card(Math.max.apply(null,all.map(function(r){return r.net})),'সেরা নিট WPM')+'</div>'
+      +'<p style="color:var(--muted);margin:0 0 10px;font-size:.88rem">সর্বশেষ '+n+'টি চেষ্টা (পুরোনো → নতুন)। গ্রাফের ওপর মাউস বা আঙুল রাখলে বিস্তারিত দেখা যাবে।</p>';
+    var labs=h.map(function(_,i){return i+1});
+    var tips=h.map(function(r,i){return '<b>#'+(i+1)+'</b> · '+dt(r.d)+' · '+r.m+'<br>নিট WPM: <b>'+r.net+'</b> · মোট WPM: '+r.wpm+'<br>নির্ভুলতা: '+r.acc+'% · ভুল শব্দ: '+(r.bad||0)+'<br>সময়: '+fmt(r.t)});
+    var net=h.map(function(r){return r.net});
+    html+=mk({title:'গতি (WPM)',type:'line',labs:labs,tips:tips,series:[{n:'নিট WPM',v:net,c:'var(--accent)',area:1,w:2.5},{n:'মোট WPM',v:h.map(function(r){return r.wpm}),c:'#4a7fd1',w:1.5},{n:'ট্রেন্ড (৫ চেষ্টার গড়)',v:ma(net,5),c:'#d98a1b',dash:1,w:2}]});
+    html+=mk({title:'নির্ভুলতা (%)',type:'line',labs:labs,tips:tips,max:100,series:[{n:'নির্ভুলতা',v:h.map(function(r){return r.acc}),c:'#2f9e6e',area:1,w:2.5},{n:'ট্রেন্ড (৫ চেষ্টার গড়)',v:ma(h.map(function(r){return r.acc}),5),c:'#d98a1b',dash:1,w:2}]});
+    html+=mk({title:'ভুল শব্দ (প্রতি চেষ্টায়)',type:'bar',labs:labs,tips:tips,series:[{n:'ভুল শব্দ',v:h.map(function(r){return r.bad||0}),c:'#c8453b'}]});
+    var by={},ord=[];
+    all.forEach(function(r){var d=new Date(r.d),k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();if(!by[k]){by[k]={c:0,n:0,t:0,l:d.getDate()+'/'+(d.getMonth()+1)};ord.push(k)}by[k].c+=ch(r);by[k].n++;by[k].t+=r.t||0});
+    ord=ord.slice(-30);
+    html+=mk({title:'দিনভিত্তিক টাইপ করা অক্ষর (সর্বশেষ '+ord.length+' দিন)',type:'bar',labs:ord.map(function(k){return by[k].l}),tips:ord.map(function(k){return '<b>'+by[k].l+'</b><br>অক্ষর: '+by[k].c+'<br>চেষ্টা: '+by[k].n+'টি · সময়: '+dur(by[k].t)}),series:[{n:'অক্ষর',v:ord.map(function(k){return by[k].c}),c:'var(--accent)'}]});
+    b.innerHTML=html;
+    Array.prototype.forEach.call(b.querySelectorAll('.chbox'),attach);
+  }
+  var prevView='s',clr=false;
+  function showHist(){
+    prevView=$('practice').classList.contains('hide')?'s':'p';
+    $('setup').classList.add('hide');$('practice').classList.add('hide');$('history').classList.remove('hide');
+    clr=false;$('hClear').textContent='হিস্টরি মুছুন';drawHist();
+  }
+  function closeHist(){
+    $('history').classList.add('hide');
+    $(prevView==='p'?'practice':'setup').classList.remove('hide');
+  }
+  $('hBtn').onclick=function(){$('history').classList.contains('hide')?showHist():closeHist()};
+  $('hBack').onclick=closeHist;
+  $('hClear').onclick=function(){
+    if(!clr){clr=true;this.textContent='নিশ্চিত? আবার চাপুন';return}
+    try{localStorage.removeItem('bn-hist')}catch(e){}
+    clr=false;this.textContent='হিস্টরি মুছুন';drawHist();
+  };
+  $("start").onclick=begin;
+  $("sample").onclick=function(){$("src").value=SAMPLE;info()};
+  $("inp").addEventListener("input",check);
+  $("inp").addEventListener("keydown",function(e){if(e.key==="Enter"&&ready&&!finished&&!e.isComposing){e.preventDefault();finish()}});
+  $("reset").onclick=function(){reset();$("inp").focus()};
+  $("back").onclick=function(){clearInterval(timer);show(false)};
+})();
+</script>
+</body>
+</html>
