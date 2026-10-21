@@ -20,7 +20,9 @@ textarea{width:100%;box-sizing:border-box;font:inherit;font-size:1.15rem;padding
 textarea:focus{outline:2px solid var(--accent)}
 button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);padding:9px 18px;margin:8px 8px 0 0}
 button.ghost{background:transparent;color:var(--accent)}
-.ref{font-size:1.35rem;line-height:2.1;word-break:break-word;white-space:pre-wrap;height:10rem;min-height:80px;resize:vertical;overflow-y:auto;position:relative;scroll-behavior:smooth}
+.box{display:block;width:100%;box-sizing:border-box;height:13rem;min-height:80px;margin:0 0 12px;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:1.3rem;line-height:2;letter-spacing:normal;word-spacing:normal;text-align:left;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;overflow-y:auto;scrollbar-gutter:stable;resize:vertical}
+#ref{background:var(--card);color:var(--text);position:relative;scroll-behavior:smooth}
+#inp{background:var(--bg);color:var(--text);margin-bottom:0}
 .ref span.ok{background:var(--okbg);color:var(--ok)}
 .ref span.bad{background:var(--badbg);color:var(--bad)}
 .ref span.cur{background:var(--cur);border-bottom:2px solid var(--accent)}
@@ -103,8 +105,8 @@ body.hide-live .live{display:none}
     <div class="stat"><b id="sErr">0</b><small>ভুল অক্ষর</small></div>
   </div>
   <div class="bar live"><div id="prog"></div></div>
-  <div class="card"><div id="ref" class="ref" aria-label="অনুশীলনের লেখা"></div></div>
-  <textarea id="inp" rows="5" placeholder="এখানে টাইপ করুন…" spellcheck="false" autocomplete="off"></textarea>
+  <div id="ref" class="ref box" aria-label="অনুশীলনের লেখা"></div>
+  <textarea id="inp" class="box" rows="5" placeholder="এখানে টাইপ করুন…" spellcheck="false" autocomplete="off"></textarea>
   <button id="submit" class="hide">জমা দিন (Enter)</button><button id="reset" class="ghost">আবার শুরু</button>
   <button id="back" class="ghost">নতুন লেখা দিন</button>
   <div id="done" class="card done" style="margin-top:14px"><span id="doneMsg"></span><div id="report" style="margin-top:8px"></div></div>
