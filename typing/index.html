@@ -20,9 +20,11 @@ textarea{width:100%;box-sizing:border-box;font:inherit;font-size:1.15rem;padding
 textarea:focus{outline:2px solid var(--accent)}
 button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);padding:9px 18px;margin:8px 8px 0 0}
 button.ghost{background:transparent;color:var(--accent)}
-.box{display:block;width:100%;box-sizing:border-box;height:13rem;min-height:80px;margin:0 0 12px;padding:12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:1.3rem;line-height:2;letter-spacing:normal;word-spacing:normal;text-align:left;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;overflow-y:auto;scrollbar-gutter:stable;resize:vertical}
-#ref{background:var(--card);color:var(--text);position:relative;scroll-behavior:smooth}
-#inp{background:var(--bg);color:var(--text);margin-bottom:0}
+.ref{font-size:1.35rem;line-height:2.1;word-break:break-word;white-space:pre-wrap;height:10rem;min-height:80px;resize:vertical;overflow-y:auto;position:relative;scroll-behavior:smooth}
+#inp{font-size:1.35rem;height:8rem;min-height:5rem;padding-bottom:4rem;scrollbar-width:none}
+#inp::-webkit-scrollbar{display:none}
+.ref{scrollbar-width:none}
+.ref::-webkit-scrollbar{display:none}
 .ref span.ok{background:var(--okbg);color:var(--ok)}
 .ref span.bad{background:var(--badbg);color:var(--bad)}
 .ref span.cur{background:var(--cur);border-bottom:2px solid var(--accent)}
@@ -105,8 +107,8 @@ body.hide-live .live{display:none}
     <div class="stat"><b id="sErr">0</b><small>ভুল অক্ষর</small></div>
   </div>
   <div class="bar live"><div id="prog"></div></div>
-  <div id="ref" class="ref box" aria-label="অনুশীলনের লেখা"></div>
-  <textarea id="inp" class="box" rows="5" placeholder="এখানে টাইপ করুন…" spellcheck="false" autocomplete="off"></textarea>
+  <div class="card"><div id="ref" class="ref" aria-label="অনুশীলনের লেখা"></div></div>
+  <textarea id="inp" rows="5" placeholder="এখানে টাইপ করুন…" spellcheck="false" autocomplete="off"></textarea>
   <button id="submit" class="hide">জমা দিন (Enter)</button><button id="reset" class="ghost">আবার শুরু</button>
   <button id="back" class="ghost">নতুন লেখা দিন</button>
   <div id="done" class="card done" style="margin-top:14px"><span id="doneMsg"></span><div id="report" style="margin-top:8px"></div></div>
@@ -187,6 +189,22 @@ body.hide-live .live{display:none}
     return{ok:ok,bad:bad,okC:okC,errC:errC,totC:totC,total:a.toks.length+(a.partial?1:0)};
   }
 
+  // টাইপ বক্স: কার্সর যে লাইনে আছে সেটি বক্সের মাঝখানে রাখে (শেষ লাইনে নয়)
+  var mir=null;
+  function fixTa(){
+    var ta=$("inp");
+    if(finished||!ta.value){ta.scrollTop=0;return}
+    if(!mir){mir=document.createElement("div");document.body.appendChild(mir)}
+    var cs=getComputedStyle(ta);
+    mir.style.cssText="position:absolute;visibility:hidden;left:-9999px;top:0;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;box-sizing:border-box;border:0";
+    ["fontFamily","fontSize","fontWeight","lineHeight","letterSpacing","wordSpacing","paddingTop","paddingBottom","paddingLeft","paddingRight","textAlign"].forEach(function(k){mir.style[k]=cs[k]});
+    mir.style.width=ta.clientWidth+"px";
+    var pos=ta.selectionStart==null?ta.value.length:ta.selectionStart;
+    mir.textContent=ta.value.slice(0,pos);
+    var mk=document.createElement("span");mk.textContent="\u200b";mir.appendChild(mk);
+    var lh=parseFloat(cs.lineHeight)||24;
+    ta.scrollTop=Math.max(0,mk.offsetTop-(ta.clientHeight-lh)/2);
+  }
   function render(){
     var a=align(),h="",hide=exam&&!finished,at={},curI=-1;
     if(!finished&&a.jEnd<words.length){var cw=words[a.jEnd],pl=a.partial?split(a.partial).length:0;curI=cw.s+Math.min(pl,cw.g.length-1)}
@@ -208,9 +226,10 @@ body.hide-live .live{display:none}
       h+='<span class="'+cls+'"'+(i===curI?' id="curc"':'')+'>'+esc(g)+'</span>';
     }
     $("ref").innerHTML=h;
-    var r=$("ref"),cc=$("curc");
-    if(finished){r.scrollTop=0}
-    else if(cc){var tp=cc.offsetTop,bt=tp+cc.offsetHeight;if(bt>r.scrollTop+r.clientHeight-10||tp<r.scrollTop)r.scrollTop=Math.max(0,tp-r.clientHeight/3)}
+    var r=$("ref"),cc=$("curc"),tgt=r.scrollTop;
+    if(finished){tgt=0;r.scrollTop=0}
+    else if(cc){var tp=cc.offsetTop,want=Math.max(0,tp-r.clientHeight/2);if(Math.abs(want-r.scrollTop)>2){tgt=want;r.scrollTop=want}}
+    fixTa();
   }
 
   function stats(){
@@ -387,7 +406,7 @@ body.hide-live .live{display:none}
   };
   $("start").onclick=begin;
   $("sample").onclick=function(){$("src").value=SAMPLE;info()};
-  $("inp").addEventListener("input",check);
+  $("inp").addEventListener("input",function(e){check(e);fixTa();requestAnimationFrame(fixTa)});
   $("inp").addEventListener("keydown",function(e){if(e.key==="Enter"&&ready&&!finished&&!e.isComposing){e.preventDefault();finish()}});
   $("reset").onclick=function(){reset();$("inp").focus()};
   $("back").onclick=function(){clearInterval(timer);show(false)};
