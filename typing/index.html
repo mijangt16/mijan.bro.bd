@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -62,6 +61,10 @@ body.hide-live .live{display:none}
 .ht th{position:sticky;top:0;background:var(--card)}
 .ht{width:100%;border-collapse:collapse;font-size:.9rem;white-space:nowrap}
 .ht th,.ht td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.cd{text-align:center;margin:0 0 12px}
+.cd small{display:block;color:var(--muted);font-size:.85rem;line-height:1.3}
+.cd b{display:block;font-size:2.4rem;line-height:1.3;color:var(--accent);font-variant-numeric:tabular-nums}
+.cd.over b{color:var(--bad)}
 .wr{color:var(--bad);background:var(--badbg);border-radius:4px;padding:0 5px}
 .gr{color:var(--ok);background:var(--okbg);border-radius:4px;padding:0 5px}
 </style>
@@ -70,8 +73,10 @@ body.hide-live .live{display:none}
 <div class="mode" role="group" aria-label="মোড"><button id="mPr" class="on">অনুশীলন</button><button id="mEx">পরীক্ষা</button></div>
 <button id="hBtn" class="histbtn">হিস্টরি</button>
 <main>
+<div id="hdr">
 <h1>বাংলা লেখা অনুশীলন</h1>
 <p class="sub">যেকোনো বাংলা লেখা বসান, তারপর নিচের ঘরে দেখে দেখে টাইপ করুন।</p>
+</div>
 
 <section id="setup" class="card">
   <label for="src">অনুশীলনের লেখা</label>
@@ -79,13 +84,14 @@ body.hide-live .live{display:none}
   <div class="info">
     <span>শব্দ (৫ অক্ষর = ১): <b id="iW">0</b></span>
     <span>অক্ষর (স্পেস ছাড়া): <b id="iC">0</b></span>
-    <span>প্রতি মিনিটে <input id="spd" type="number" min="1" value="100"> অক্ষর লিখলে সময় লাগবে: <b id="iT">—</b></span>
+    <span>প্রতি মিনিটে <input id="spd" type="number" min="1" value="20"> শব্দ লিখলে সময় লাগবে: <b id="iT">—</b></span>
   </div>
   <button id="start">শুরু করুন</button>
   <button id="sample" class="ghost">নমুনা লেখা</button>
 </section>
 
 <section id="practice" class="hide">
+  <div class="cd" id="cdBox"><small>বাকি সময়</small><b id="cd">0:00</b></div>
   <div class="stats live">
     <div class="stat"><b id="sAcc">100%</b><small>নির্ভুলতা</small></div>
     <div class="stat"><b id="sWpm">0</b><small>মোট WPM</small></div>
@@ -124,7 +130,8 @@ body.hide-live .live{display:none}
   var SAMPLE="আমার সোনার বাংলা, আমি তোমায় ভালোবাসি। বাংলা আমাদের মাতৃভাষা। প্রতিদিন একটু একটু করে লিখলে হাতের আর মনের জড়তা কেটে যায়।";
   try{var saved=localStorage.getItem("bn-text");if(saved)$("src").value=saved}catch(e){}
 
-  function show(on){$("setup").classList.toggle("hide",on);$("practice").classList.toggle("hide",!on);$("history").classList.add("hide")}
+  var limit=0;
+  function show(on){$("hdr").classList.toggle("hide",on);$("setup").classList.toggle("hide",on);$("practice").classList.toggle("hide",!on);$("history").classList.add("hide")}
   function fmt(s){return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0")}
 
   function build(){
@@ -209,8 +216,9 @@ body.hide-live .live{display:none}
     var gross=el>2?Math.round(len/5/(el/60)):0; // ৫ অক্ষর = ১ শব্দ
     $("sAcc").textContent=c.totC?Math.round(c.okC/c.totC*100)+"%":"100%";
     $("sWpm").textContent=gross;
-    $("sNet").textContent=Math.max(0,gross-c.bad); // প্রতি ভুল শব্দে ১ WPM কম
+    $("sNet").textContent=el>2?Math.max(0,Math.round(gross-c.bad/(el/60))):0; // নিট WPM = মোট WPM − (ভুল শব্দ ÷ মিনিট)
     $("sTime").textContent=fmt(el);
+    var rem=Math.ceil(limit-el);$("cd").textContent=fmt(Math.max(0,rem));$("cdBox").classList.toggle("over",rem<=0&&el>0);
     $("sWords").textContent=Math.round(len/5*10)/10;$("sOk").textContent=Math.max(0,Math.round((len/5-c.bad)*10)/10);$("sBad").textContent=c.bad;
     $("sErr").textContent=c.errC;
     $("prog").style.width=Math.min(100,len/Math.max(1,NS(target))*100)+"%";
@@ -258,7 +266,9 @@ body.hide-live .live{display:none}
     var txt=$("src").value.replace(/\r/g,"").trim();
     if(!txt){$("src").focus();return}
     try{localStorage.setItem("bn-text",txt)}catch(e){}
-    target=split(txt);build();reset();show(true);$("inp").focus();
+    target=split(txt);build();
+    limit=Math.max(1,Math.round(NS(target)/5/Math.max(1,+$("spd").value||20)*60));
+    reset();show(true);$("inp").focus();
   }
   function setMode(e){
     exam=e;
@@ -274,7 +284,7 @@ body.hide-live .live{display:none}
   function info(){
     var t=norm($('src').value.replace(/\r/g,'')).trim(),g=t?split(t):[];
     var w=t?t.split(/\s+/).length:0,ns=NS(g);
-    var sp=Math.max(1,+$('spd').value||100),s=Math.round(ns/sp*60),mi=Math.floor(s/60);
+    var sp=Math.max(1,+$('spd').value||20),s=Math.round(ns/5/sp*60),mi=Math.floor(s/60);
     $('iW').textContent=Math.round(ns/5*10)/10;$('iC').textContent=ns;
     $('iT').textContent=g.length?(mi?mi+' মিনিট ':'')+(s%60)+' সেকেন্ড':'—';
   }
