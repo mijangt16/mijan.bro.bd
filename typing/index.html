@@ -71,6 +71,11 @@ body.hide-live .live{display:none}
 .cd.over b{color:var(--bad)}
 .wr{color:var(--bad);background:var(--badbg);border-radius:4px;padding:0 5px}
 .gr{color:var(--ok);background:var(--okbg);border-radius:4px;padding:0 5px}
+.acct{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;margin:0 0 16px;font-size:.95rem}
+.acct button{margin:0;padding:6px 14px}
+.acct img{width:26px;height:26px;border-radius:50%;vertical-align:middle}
+#syncMsg{color:var(--muted);font-size:.85rem}
+#syncMsg.err{color:var(--bad)}
 </style>
 </head>
 <body>
@@ -80,6 +85,11 @@ body.hide-live .live{display:none}
 <div id="hdr">
 <h1>বাংলা লেখা অনুশীলন</h1>
 <p class="sub">যেকোনো বাংলা লেখা বসান, তারপর নিচের ঘরে দেখে দেখে টাইপ করুন।</p>
+<div class="acct" id="acct">
+  <button id="gIn" class="ghost" type="button">Google দিয়ে সাইন ইন করুন</button>
+  <span id="acctUser" class="hide"><img id="acctPhoto" alt="" referrerpolicy="no-referrer"> <span id="acctName"></span> <button id="gOut" class="ghost" type="button">সাইন আউট</button></span>
+  <span id="syncMsg">সাইন ইন করলে অগ্রগতি সব ডিভাইসে পাবেন</span>
+</div>
 </div>
 
 <section id="setup" class="card">
@@ -111,7 +121,7 @@ body.hide-live .live{display:none}
   <textarea id="inp" rows="5" placeholder="এখানে টাইপ করুন…" spellcheck="false" autocomplete="off"></textarea>
   <button id="submit" class="hide">জমা দিন (Enter)</button><button id="reset" class="ghost">আবার শুরু</button>
   <button id="back" class="ghost">নতুন লেখা দিন</button>
-  <div id="done" class="card done" style="margin-top:14px"><span id="doneMsg"></span><div id="report" style="margin-top:8px"></div></div>
+  <div id="done" class="card done" style="margin-top:14px"><div id="doneMsg" style="margin-bottom:6px"></div><div id="report" style="margin-top:8px"></div></div>
 </section>
 <section id="history" class="hide">
   <h2 style="color:var(--accent);margin:0 0 4px;font-size:1.25rem">হিস্টরি ও অগ্রগতি</h2>
@@ -132,7 +142,48 @@ body.hide-live .live{display:none}
   function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
   var target=[],words=[],t0=null,timer=null,finished=false,exam=false,tDone=null,ready=false;
   var SAMPLE="আমার সোনার বাংলা, আমি তোমায় ভালোবাসি। বাংলা আমাদের মাতৃভাষা। প্রতিদিন একটু একটু করে লিখলে হাতের আর মনের জড়তা কেটে যায়।";
-  try{var saved=localStorage.getItem("bn-text");if(saved)$("src").value=saved}catch(e){}
+
+  // ---- সংরক্ষণ: লগইন থাকলে Firestore, না থাকলে এই ডিভাইসের localStorage ----
+  var uid=null;
+  var lastText="";
+  function localHist(){try{return JSON.parse(localStorage.getItem('bn-hist')||'[]')}catch(e){return[]}}
+  var HIST=localHist();
+  try{lastText=localStorage.getItem("bn-text")||"";if(lastText)$("src").value=lastText}catch(e){}
+
+  function sync(msg,err){var s=$("syncMsg");s.textContent=msg;s.classList.toggle("err",!!err)}
+  function persistHist(){
+    HIST=HIST.slice(-3000);
+    if(uid&&window.cloudSave){
+      return window.cloudSave("hist",HIST).then(function(){return true});
+    }
+    try{localStorage.setItem('bn-hist',JSON.stringify(HIST))}catch(e){}
+    return Promise.resolve(false);
+  }
+  function mergeHist(a,b){
+    var m={};a.concat(b).forEach(function(r){if(r&&r.d)m[r.d]=r});
+    return Object.keys(m).map(function(k){return m[k]}).sort(function(x,y){return x.d-y.d}).slice(-3000);
+  }
+
+  document.addEventListener("user-ready",function(e){
+    var u=e.detail;
+    if(!u){uid=null;HIST=localHist();sync("সাইন ইন করলে অগ্রগতি সব ডিভাইসে পাবেন");return}
+    uid=u.uid;sync("অ্যাকাউন্ট থেকে ডেটা লোড হচ্ছে…");
+    Promise.all([window.cloudLoad("hist",[]),window.cloudLoad("text","")]).then(function(r){
+      var local=localHist(),merged=mergeHist(r[0]||[],local);
+      var needSave=merged.length!==(r[0]||[]).length;
+      HIST=merged;
+      var cloudText=r[1];
+      if(cloudText&&$("src").value===lastText){$("src").value=cloudText;lastText=cloudText;info()}
+      var p=needSave?window.cloudSave("hist",HIST).then(function(){try{localStorage.removeItem("bn-hist")}catch(x){}}):Promise.resolve();
+      return p;
+    }).then(function(){
+      sync("✔ অ্যাকাউন্টের সাথে যুক্ত — অগ্রগতি সংরক্ষিত হবে");
+      if(!$("history").classList.contains("hide"))drawHist();
+    }).catch(function(err){
+      console.error(err);
+      sync("ডেটা লোড করা যায়নি ("+(err&&err.code||"error")+"). Firestore ডেটাবেস ও রুলস ঠিক আছে কিনা দেখুন।",true);
+    });
+  });
 
   var limit=0;
   function show(on){$("hdr").classList.toggle("hide",on);$("setup").classList.toggle("hide",on);$("practice").classList.toggle("hide",!on);$("history").classList.add("hide")}
@@ -262,7 +313,6 @@ body.hide-live .live{display:none}
     if(finished)return;
     finished=true;clearInterval(timer);document.body.classList.remove("hide-live");
     $("inp").disabled=true;render();stats();report(align());saveHist();$("submit").classList.add("hide");
-    
     $("done").style.display="block";
   }
 
@@ -279,14 +329,16 @@ body.hide-live .live{display:none}
 
   function reset(){
     clearInterval(timer);t0=null;tDone=null;ready=false;finished=false;
-    $("inp").value="";$("inp").disabled=false;$("done").style.display="none";$("report").innerHTML="";
+    $("inp").value="";$("inp").disabled=false;$("done").style.display="none";$("report").innerHTML="";$("doneMsg").textContent="";
     document.body.classList.toggle("hide-live",exam);$("submit").classList.toggle("hide",!exam);
     render();stats();
   }
   function begin(){
     var txt=$("src").value.replace(/\r/g,"").trim();
     if(!txt){$("src").focus();return}
+    lastText=txt;
     try{localStorage.setItem("bn-text",txt)}catch(e){}
+    if(uid&&window.cloudSave)window.cloudSave("text",txt).catch(function(err){console.error(err)});
     target=split(txt);build();
     limit=Math.max(1,Math.round(NS(target)/5/Math.max(1,+$("spd").value||20)*60));
     reset();show(true);$("inp").focus();
@@ -300,7 +352,7 @@ body.hide-live .live{display:none}
   $("mPr").onclick=function(){setMode(false)};
   $("mEx").onclick=function(){setMode(true)};
   $("submit").onclick=function(){if(!finished&&$("inp").value)finish()};
-  
+
   // ---- অক্ষর/শব্দ সংখ্যা ও সময়ের হিসাব ----
   function info(){
     var t=norm($('src').value.replace(/\r/g,'')).trim(),g=t?split(t):[];
@@ -312,11 +364,19 @@ body.hide-live .live{display:none}
   $('src').addEventListener('input',info);$('spd').addEventListener('input',info);info();
 
   // ---- হিস্টরি ও অগ্রগতি ----
-  function loadH(){try{return JSON.parse(localStorage.getItem('bn-hist')||'[]')}catch(e){return[]}}
+  function loadH(){return HIST}
   function saveHist(){
-    var h=loadH(),el=t0?Math.round(((tDone||Date.now())-t0)/1000):0;
-    h.push({d:Date.now(),m:exam?'পরীক্ষা':'অনুশীলন',acc:parseInt($('sAcc').textContent)||0,wpm:+$('sWpm').textContent||0,net:+$('sNet').textContent||0,t:el,w:+$('sWords').textContent||0,bad:+$('sBad').textContent||0,ok:+$('sOk').textContent||0,err:+$('sErr').textContent||0,ch:NS(split($('inp').value)),c:NS(target)});
-    try{localStorage.setItem('bn-hist',JSON.stringify(h.slice(-5000)))}catch(e){}
+    var el=t0?Math.round(((tDone||Date.now())-t0)/1000):0;
+    HIST.push({d:Date.now(),m:exam?'পরীক্ষা':'অনুশীলন',acc:parseInt($('sAcc').textContent)||0,wpm:+$('sWpm').textContent||0,net:+$('sNet').textContent||0,t:el,w:+$('sWords').textContent||0,bad:+$('sBad').textContent||0,ok:+$('sOk').textContent||0,err:+$('sErr').textContent||0,ch:NS(split($('inp').value)),c:NS(target)});
+    var dm=$('doneMsg');
+    dm.textContent=uid?"সংরক্ষণ হচ্ছে…":"";
+    persistHist().then(function(cloud){
+      dm.innerHTML=cloud?"<b>✔ ফলাফল আপনার অ্যাকাউন্টে সংরক্ষিত হয়েছে।</b>":"<b>⚠ সাইন ইন নেই — ফলাফল শুধু এই ডিভাইসে সংরক্ষিত হয়েছে।</b>";
+    }).catch(function(err){
+      console.error(err);
+      try{localStorage.setItem('bn-hist',JSON.stringify(HIST))}catch(x){}
+      dm.innerHTML="<b>⚠ অ্যাকাউন্টে সংরক্ষণ করা যায়নি ("+esc(String(err&&err.code||"error"))+"); এই ডিভাইসে রাখা হয়েছে।</b>";
+    });
   }
   var INFO=[];
   var CW=640,CHT=250,PL=44,PR=14,PT=14,PB=30;
@@ -401,7 +461,9 @@ body.hide-live .live{display:none}
   $('hBack').onclick=closeHist;
   $('hClear').onclick=function(){
     if(!clr){clr=true;this.textContent='নিশ্চিত? আবার চাপুন';return}
+    HIST=[];
     try{localStorage.removeItem('bn-hist')}catch(e){}
+    if(uid&&window.cloudSave)window.cloudSave("hist",[]).catch(function(err){console.error(err)});
     clr=false;this.textContent='হিস্টরি মুছুন';drawHist();
   };
   $("start").onclick=begin;
@@ -411,6 +473,69 @@ body.hide-live .live{display:none}
   $("reset").onclick=function(){reset();$("inp").focus()};
   $("back").onclick=function(){clearInterval(timer);show(false)};
 })();
+</script>
+
+<!-- Firebase: Google লগইন + Firestore -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  const app = initializeApp({
+    apiKey: "AIzaSyBf3cdb7qdvlNXJlkpeXwuwaUjBr3dlAgA",
+    authDomain: "mijanbrobddatasaver.firebaseapp.com",
+    projectId: "mijanbrobddatasaver",
+    storageBucket: "mijanbrobddatasaver.firebasestorage.app",
+    messagingSenderId: "601428881237",
+    appId: "1:601428881237:web:2c7046b4d0a3dafb1789dc"
+  });
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Save/load under users/{uid}/data/{key}. Throws on failure so the page can show an error.
+  window.cloudSave = async (key, value) => {
+    const u = auth.currentUser;
+    if (!u) throw new Error("not signed in");
+    await setDoc(doc(db, "users", u.uid, "data", key), { value });
+  };
+  window.cloudLoad = async (key, fallback) => {
+    const u = auth.currentUser;
+    if (!u) return fallback;
+    const snap = await getDoc(doc(db, "users", u.uid, "data", key));
+    return snap.exists() ? snap.data().value : fallback;
+  };
+
+  const gIn = document.getElementById("gIn");
+  const gOut = document.getElementById("gOut");
+  const acctUser = document.getElementById("acctUser");
+  const acctName = document.getElementById("acctName");
+  const acctPhoto = document.getElementById("acctPhoto");
+
+  gIn.addEventListener("click", async () => {
+    try { await signInWithPopup(auth, provider); }
+    catch (err) {
+      if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
+        const s = document.getElementById("syncMsg");
+        s.textContent = "সাইন ইন ব্যর্থ: " + err.code;
+        s.classList.add("err");
+      }
+    }
+  });
+  gOut.addEventListener("click", () => signOut(auth));
+
+  onAuthStateChanged(auth, (user) => {
+    gIn.classList.toggle("hide", !!user);
+    acctUser.classList.toggle("hide", !user);
+    if (user) {
+      acctName.textContent = user.displayName || user.email;
+      if (user.photoURL) { acctPhoto.src = user.photoURL; acctPhoto.style.display = ""; }
+      else acctPhoto.style.display = "none";
+    }
+    document.dispatchEvent(new CustomEvent("user-ready", { detail: user }));
+  });
 </script>
 </body>
 </html>
