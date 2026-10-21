@@ -15,6 +15,7 @@
       background: #176b4d;
       color: white;
       padding: 25px;
+      position: relative;
     }
     main {
       padding: 60px 20px;
@@ -31,12 +32,67 @@
     .typing-btn:hover {
       background: #105139;
     }
+
+    /* Sign-in area */
+    .auth-bar {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .auth-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      color: #333;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .auth-btn:hover { background: #e8f1ed; }
+    .auth-btn:focus-visible { outline: 3px solid #ffd54a; outline-offset: 2px; }
+    .auth-btn svg { width: 18px; height: 18px; }
+    #userInfo { display: flex; align-items: center; gap: 8px; }
+    #userPhoto { width: 28px; height: 28px; border-radius: 50%; }
+    #authMsg { color: #b00020; font-size: 14px; margin-top: 10px; min-height: 1em; }
+
+    @media (max-width: 600px) {
+      .auth-bar {
+        position: static;
+        justify-content: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
+    <div class="auth-bar">
+      <button id="loginBtn" class="auth-btn" type="button">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/>
+          <path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/>
+          <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/>
+        </svg>
+        Sign in with Google
+      </button>
+      <div id="userInfo" style="display:none">
+        <img id="userPhoto" alt="" referrerpolicy="no-referrer">
+        <span id="userName"></span>
+        <button id="logoutBtn" class="auth-btn" type="button">Sign out</button>
+      </div>
+    </div>
     <h1>Mijan Bro</h1>
     <p>Welcome to my website</p>
+    <div id="authMsg" role="alert"></div>
   </header>
 
   <main>
@@ -44,5 +100,73 @@
     <p>Practice Bangla typing and improve your speed.</p>
     <a class="typing-btn" href="/typing/">Typing</a>
   </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc }
+      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyBf3cdb7qdvlNXJlkpeXwuwaUjBr3dlAgA",
+      authDomain: "mijanbrobddatasaver.firebaseapp.com",
+      projectId: "mijanbrobddatasaver",
+      storageBucket: "mijanbrobddatasaver.firebasestorage.app",
+      messagingSenderId: "601428881237",
+      appId: "1:601428881237:web:2c7046b4d0a3dafb1789dc"
+    });
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const userName = document.getElementById("userName");
+    const userPhoto = document.getElementById("userPhoto");
+    const authMsg = document.getElementById("authMsg");
+
+    let currentUser = null;
+
+    // Save / load helpers (use these instead of localStorage)
+    window.saveData = async function (key, value) {
+      if (!currentUser) { alert("Please sign in first"); return; }
+      await setDoc(doc(db, "users", currentUser.uid, "data", key), { value });
+    };
+    window.loadData = async function (key, fallback = null) {
+      if (!currentUser) return fallback;
+      const snap = await getDoc(doc(db, "users", currentUser.uid, "data", key));
+      return snap.exists() ? snap.data().value : fallback;
+    };
+
+    loginBtn.addEventListener("click", async () => {
+      authMsg.textContent = "";
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        if (err.code === "auth/unauthorized-domain") {
+          authMsg.textContent = "This domain is not authorized. Add it in Firebase: Authentication > Settings > Authorized domains.";
+        } else if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
+          authMsg.textContent = "Sign-in failed: " + err.code;
+        }
+      }
+    });
+
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      loginBtn.style.display = user ? "none" : "";
+      userInfo.style.display = user ? "flex" : "none";
+      if (user) {
+        userName.textContent = user.displayName || user.email;
+        if (user.photoURL) { userPhoto.src = user.photoURL; userPhoto.style.display = ""; }
+        else { userPhoto.style.display = "none"; }
+      }
+      document.dispatchEvent(new CustomEvent("user-ready", { detail: user }));
+    });
+  </script>
 </body>
 </html>
