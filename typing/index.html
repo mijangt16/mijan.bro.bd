@@ -38,10 +38,13 @@ button.ghost{background:transparent;color:var(--accent)}
 .hide{display:none}
 label{font-weight:600}
 body.hide-live .live{display:none}
-.mode{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:20;display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 2px 10px rgba(0,0,0,.18);opacity:.85;transition:opacity .15s}
+.mode{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:56px;z-index:20;display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:0 2px 10px rgba(0,0,0,.18);opacity:.85;transition:opacity .15s}
 .mode:hover{opacity:1}
 .mode button{margin:0;padding:5px 14px;border-radius:999px;background:transparent;color:var(--muted);border:0}
 .mode button.on{background:var(--accent);color:var(--bg)}
+.avatar{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:20;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card) center/cover no-repeat;color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.18);padding:0}
+.avatar.out{cursor:pointer}
+.avatar svg{width:20px;height:20px}
 #report div{padding:4px 0;border-bottom:1px dashed var(--line)}
 .histbtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;z-index:20;margin:0;padding:5px 14px;border-radius:999px;background:var(--card);color:var(--accent);border:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.18);opacity:.85}
 .histbtn:hover{opacity:1}
@@ -71,25 +74,19 @@ body.hide-live .live{display:none}
 .cd.over b{color:var(--bad)}
 .wr{color:var(--bad);background:var(--badbg);border-radius:4px;padding:0 5px}
 .gr{color:var(--ok);background:var(--okbg);border-radius:4px;padding:0 5px}
-.acct{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;margin:0 0 16px;font-size:.95rem}
-.acct button{margin:0;padding:6px 14px}
-.acct img{width:26px;height:26px;border-radius:50%;vertical-align:middle}
 #syncMsg{color:var(--muted);font-size:.85rem}
 #syncMsg.err{color:var(--bad)}
 </style>
 </head>
 <body>
 <div class="mode" role="group" aria-label="মোড"><button id="mPr" class="on">অনুশীলন</button><button id="mEx">পরীক্ষা</button></div>
+<div id="avatar" class="avatar" role="img" aria-label="account"></div>
 <button id="hBtn" class="histbtn">হিস্টরি</button>
 <main>
 <div id="hdr">
 <h1>বাংলা লেখা অনুশীলন</h1>
 <p class="sub">যেকোনো বাংলা লেখা বসান, তারপর নিচের ঘরে দেখে দেখে টাইপ করুন।</p>
-<div class="acct" id="acct">
-  <button id="gIn" class="ghost" type="button">Google দিয়ে সাইন ইন করুন</button>
-  <span id="acctUser" class="hide"><img id="acctPhoto" alt="" referrerpolicy="no-referrer"> <span id="acctName"></span> <button id="gOut" class="ghost" type="button">সাইন আউট</button></span>
-  <span id="syncMsg">সাইন ইন করলে অগ্রগতি সব ডিভাইসে পাবেন</span>
-</div>
+<p id="syncMsg" class="sub"></p>
 </div>
 
 <section id="setup" class="card">
@@ -143,45 +140,28 @@ body.hide-live .live{display:none}
   var target=[],words=[],t0=null,timer=null,finished=false,exam=false,tDone=null,ready=false;
   var SAMPLE="আমার সোনার বাংলা, আমি তোমায় ভালোবাসি। বাংলা আমাদের মাতৃভাষা। প্রতিদিন একটু একটু করে লিখলে হাতের আর মনের জড়তা কেটে যায়।";
 
-  // ---- সংরক্ষণ: লগইন থাকলে Firestore, না থাকলে এই ডিভাইসের localStorage ----
-  var uid=null;
-  var lastText="";
-  function localHist(){try{return JSON.parse(localStorage.getItem('bn-hist')||'[]')}catch(e){return[]}}
-  var HIST=localHist();
-  try{lastText=localStorage.getItem("bn-text")||"";if(lastText)$("src").value=lastText}catch(e){}
+  // ---- সংরক্ষণ: শুধু Firebase (Firestore) ----
+  var uid=null,lastText="",HIST=[];
 
   function sync(msg,err){var s=$("syncMsg");s.textContent=msg;s.classList.toggle("err",!!err)}
   function persistHist(){
     HIST=HIST.slice(-3000);
-    if(uid&&window.cloudSave){
-      return window.cloudSave("hist",HIST).then(function(){return true});
-    }
-    try{localStorage.setItem('bn-hist',JSON.stringify(HIST))}catch(e){}
+    if(uid&&window.cloudSave)return window.cloudSave("hist",HIST).then(function(){return true});
     return Promise.resolve(false);
-  }
-  function mergeHist(a,b){
-    var m={};a.concat(b).forEach(function(r){if(r&&r.d)m[r.d]=r});
-    return Object.keys(m).map(function(k){return m[k]}).sort(function(x,y){return x.d-y.d}).slice(-3000);
   }
 
   document.addEventListener("user-ready",function(e){
     var u=e.detail;
-    if(!u){uid=null;HIST=localHist();sync("সাইন ইন করলে অগ্রগতি সব ডিভাইসে পাবেন");return}
+    if(!u){uid=null;HIST=[];sync("সাইন ইন নেই — অগ্রগতি সংরক্ষণ করতে ওপরের আইকনে ক্লিক করে সাইন ইন করুন",true);return}
     uid=u.uid;sync("অ্যাকাউন্ট থেকে ডেটা লোড হচ্ছে…");
     Promise.all([window.cloudLoad("hist",[]),window.cloudLoad("text","")]).then(function(r){
-      var local=localHist(),merged=mergeHist(r[0]||[],local);
-      var needSave=merged.length!==(r[0]||[]).length;
-      HIST=merged;
-      var cloudText=r[1];
-      if(cloudText&&$("src").value===lastText){$("src").value=cloudText;lastText=cloudText;info()}
-      var p=needSave?window.cloudSave("hist",HIST).then(function(){try{localStorage.removeItem("bn-hist")}catch(x){}}):Promise.resolve();
-      return p;
-    }).then(function(){
+      HIST=r[0]||[];
+      if(r[1]&&!$("src").value.trim()){$("src").value=r[1];lastText=r[1];info()}
       sync("✔ অ্যাকাউন্টের সাথে যুক্ত — অগ্রগতি সংরক্ষিত হবে");
       if(!$("history").classList.contains("hide"))drawHist();
     }).catch(function(err){
       console.error(err);
-      sync("ডেটা লোড করা যায়নি ("+(err&&err.code||"error")+"). Firestore ডেটাবেস ও রুলস ঠিক আছে কিনা দেখুন।",true);
+      sync("ডেটা লোড করা যায়নি ("+(err&&err.code||"error")+")। Firestore ডেটাবেস ও রুলস ঠিক আছে কিনা দেখুন।",true);
     });
   });
 
@@ -337,7 +317,6 @@ body.hide-live .live{display:none}
     var txt=$("src").value.replace(/\r/g,"").trim();
     if(!txt){$("src").focus();return}
     lastText=txt;
-    try{localStorage.setItem("bn-text",txt)}catch(e){}
     if(uid&&window.cloudSave)window.cloudSave("text",txt).catch(function(err){console.error(err)});
     target=split(txt);build();
     limit=Math.max(1,Math.round(NS(target)/5/Math.max(1,+$("spd").value||20)*60));
@@ -371,11 +350,10 @@ body.hide-live .live{display:none}
     var dm=$('doneMsg');
     dm.textContent=uid?"সংরক্ষণ হচ্ছে…":"";
     persistHist().then(function(cloud){
-      dm.innerHTML=cloud?"<b>✔ ফলাফল আপনার অ্যাকাউন্টে সংরক্ষিত হয়েছে।</b>":"<b>⚠ সাইন ইন নেই — ফলাফল শুধু এই ডিভাইসে সংরক্ষিত হয়েছে।</b>";
+      dm.innerHTML=cloud?"<b>✔ ফলাফল আপনার অ্যাকাউন্টে সংরক্ষিত হয়েছে।</b>":"<b>⚠ সাইন ইন নেই — ফলাফল সংরক্ষিত হয়নি।</b>";
     }).catch(function(err){
       console.error(err);
-      try{localStorage.setItem('bn-hist',JSON.stringify(HIST))}catch(x){}
-      dm.innerHTML="<b>⚠ অ্যাকাউন্টে সংরক্ষণ করা যায়নি ("+esc(String(err&&err.code||"error"))+"); এই ডিভাইসে রাখা হয়েছে।</b>";
+      dm.innerHTML="<b>⚠ সংরক্ষণ করা যায়নি ("+esc(String(err&&err.code||"error"))+")।</b>";
     });
   }
   var INFO=[];
@@ -462,7 +440,6 @@ body.hide-live .live{display:none}
   $('hClear').onclick=function(){
     if(!clr){clr=true;this.textContent='নিশ্চিত? আবার চাপুন';return}
     HIST=[];
-    try{localStorage.removeItem('bn-hist')}catch(e){}
     if(uid&&window.cloudSave)window.cloudSave("hist",[]).catch(function(err){console.error(err)});
     clr=false;this.textContent='হিস্টরি মুছুন';drawHist();
   };
@@ -475,10 +452,10 @@ body.hide-live .live{display:none}
 })();
 </script>
 
-<!-- Firebase: Google লগইন + Firestore -->
+<!-- Firebase: homepage-এ সাইন ইন করা অ্যাকাউন্ট ব্যবহার করে (এই পেজে আলাদা সাইন ইন নেই) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc }
     from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -508,31 +485,37 @@ body.hide-live .live{display:none}
     return snap.exists() ? snap.data().value : fallback;
   };
 
-  const gIn = document.getElementById("gIn");
-  const gOut = document.getElementById("gOut");
-  const acctUser = document.getElementById("acctUser");
-  const acctName = document.getElementById("acctName");
-  const acctPhoto = document.getElementById("acctPhoto");
-
-  gIn.addEventListener("click", async () => {
+  // ডান পাশের উপরে অ্যাকাউন্ট আইকন: সাইন ইন না থাকলে ক্লিক করে সাইন ইন করা যাবে
+  const av = document.getElementById("avatar");
+  const USER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>';
+  let signedIn = false;
+  av.addEventListener("click", async () => {
+    if (signedIn) return;
     try { await signInWithPopup(auth, provider); }
     catch (err) {
       if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
-        const s = document.getElementById("syncMsg");
-        s.textContent = "সাইন ইন ব্যর্থ: " + err.code;
-        s.classList.add("err");
+        const m = document.getElementById("syncMsg");
+        m.textContent = "সাইন ইন ব্যর্থ: " + err.code;
+        m.classList.add("err");
       }
     }
   });
-  gOut.addEventListener("click", () => signOut(auth));
-
   onAuthStateChanged(auth, (user) => {
-    gIn.classList.toggle("hide", !!user);
-    acctUser.classList.toggle("hide", !user);
+    signedIn = !!user;
+    av.classList.toggle("out", !user);
     if (user) {
-      acctName.textContent = user.displayName || user.email;
-      if (user.photoURL) { acctPhoto.src = user.photoURL; acctPhoto.style.display = ""; }
-      else acctPhoto.style.display = "none";
+      av.title = user.displayName || user.email || "";
+      if (user.photoURL) {
+        av.style.backgroundImage = 'url("' + user.photoURL + '")';
+        av.textContent = "";
+      } else {
+        av.style.backgroundImage = "";
+        av.textContent = ((user.displayName || user.email || "?")[0] || "?").toUpperCase();
+      }
+    } else {
+      av.style.backgroundImage = "";
+      av.innerHTML = USER_SVG;
+      av.title = "সাইন ইন করুন";
     }
     document.dispatchEvent(new CustomEvent("user-ready", { detail: user }));
   });
