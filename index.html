@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,6 +95,7 @@
       font-size: 14px;
       margin-top: 10px;
       min-height: 1em;
+      overflow-wrap: anywhere;
     }
 
     @media (max-width: 600px) {
@@ -156,10 +158,7 @@
     <p>Practice Bangla typing and improve your speed.</p>
 
     <a class="typing-btn" href="/typing/">Typing</a>
-
-    <a class="typing-btn" href="https://mijan.bro.bd/notes">
-      Notes
-    </a>
+    <a class="typing-btn" href="https://mijan.bro.bd/notes">Notes</a>
   </main>
 
   <script type="module">
@@ -203,7 +202,7 @@
 
     let currentUser = null;
 
-    // Save data to Firebase Firestore.
+    // Save typing or other application data under the signed-in user's UID.
     window.saveData = async function (key, value) {
       if (!currentUser) {
         throw new Error("Please sign in first.");
@@ -215,7 +214,7 @@
       );
     };
 
-    // Load data from Firebase Firestore.
+    // Load saved application data.
     window.loadData = async function (key, fallback = null) {
       if (!currentUser) {
         return fallback;
@@ -236,9 +235,11 @@
       try {
         await signInWithPopup(auth, provider);
       } catch (err) {
+        console.error("Google sign-in error:", err);
+
         if (err.code === "auth/unauthorized-domain") {
           authMsg.textContent =
-            "This domain is not authorized. Add it in Firebase Authentication > Settings > Authorized domains.";
+            "This domain is not authorized. Add mijan.bro.bd under Firebase Authentication > Settings > Authorized domains.";
         } else if (
           err.code !== "auth/popup-closed-by-user" &&
           err.code !== "auth/cancelled-popup-request"
@@ -254,24 +255,46 @@
       try {
         await signOut(auth);
       } catch (err) {
+        console.error("Sign-out error:", err);
         authMsg.textContent = "Sign-out failed: " + err.code;
       }
     });
 
-    onAuthStateChanged(auth, (user) => {
+    // Update the interface and save account information to Firestore.
+    onAuthStateChanged(auth, async (user) => {
       currentUser = user;
+      authMsg.textContent = "";
 
       loginBtn.style.display = user ? "none" : "";
       userInfo.style.display = user ? "flex" : "none";
 
       if (user) {
-        userName.textContent = user.displayName || user.email || "User";
+        userName.textContent =
+          user.displayName || user.email || "User";
 
         if (user.photoURL) {
           userPhoto.src = user.photoURL;
           userPhoto.style.display = "";
         } else {
+          userPhoto.removeAttribute("src");
           userPhoto.style.display = "none";
+        }
+
+        try {
+          // Store the email as a field in the existing UID document.
+          await setDoc(
+            doc(db, "users", user.uid),
+            {
+              email: user.email || "",
+              displayName: user.displayName || "",
+              lastLogin: new Date().toISOString()
+            },
+            { merge: true }
+          );
+        } catch (err) {
+          console.error("Could not save user profile:", err);
+          authMsg.textContent =
+            "Signed in, but account details could not be saved. Check Firestore security rules.";
         }
       } else {
         userName.textContent = "";
@@ -279,9 +302,7 @@
       }
 
       document.dispatchEvent(
-        new CustomEvent("user-ready", {
-          detail: user
-        })
+        new CustomEvent("user-ready", { detail: user })
       );
     });
   </script>
