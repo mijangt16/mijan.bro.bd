@@ -272,7 +272,7 @@ body.hide-live .live{display:none}
   function stats(){
     var a=align(),c=calc(a),el=t0?((tDone||Date.now())-t0)/1000:0,len=NS(split($("inp").value));
     var gross=el>2?Math.round(len/5/(el/60)):0; // ৫ অক্ষর = ১ শব্দ
-    $("sAcc").textContent=c.totC?Math.round(c.okC/c.totC*100)+"%":"100%";
+    var wt=len/5;$("sAcc").textContent=wt>0?Math.max(0,Math.round((wt-c.bad)/wt*100))+"%":"100%";
     $("sWpm").textContent=gross;
     $("sNet").textContent=el>2?Math.max(0,Math.round(gross-c.bad/(el/60))):0; // নিট WPM = মোট WPM − (ভুল শব্দ ÷ মিনিট)
     $("sTime").textContent=fmt(el);
