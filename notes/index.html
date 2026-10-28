@@ -124,7 +124,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--lin
     <label for="q">Question, word or quote</label>
     <textarea id="q" placeholder="What did you not know?"></textarea>
     <label for="a">Answer or meaning</label>
-    <textarea id="a" placeholder="Write the correct answer"></textarea>
+    <textarea id="a" placeholder="Write the correct answer (you can paste an image here with Ctrl+V)"></textarea>
     <label for="n">Note to self (optional)</label>
     <input id="n" placeholder="What should you read again?">
     <label>Image (optional)</label>
@@ -142,7 +142,6 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--lin
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 <script>
 var firebaseConfig={
   apiKey:"AIzaSyBf3cdb7qdvlNXJlkpeXwuwaUjBr3dlAgA",
@@ -156,7 +155,6 @@ var firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 var auth=firebase.auth();
 var db=firebase.firestore();
-var storage=firebase.storage();
 try{db.enablePersistence({synchronizeTabs:true}).catch(function(){})}catch(e){}
 
 var CATS=["Bangla","English","Math","GK"];
@@ -328,7 +326,14 @@ $("list").onclick=function(e){
 };
 
 /* ---------- popup ---------- */
-function openModal(){document.body.style.overflow="hidden";$("ov").hidden=false;setTimeout(function(){$("q").focus()},30)}
+function focusQ(){var q=$("q");try{q.focus({preventScroll:true})}catch(e){q.focus()}try{q.setSelectionRange(q.value.length,q.value.length)}catch(e){}}
+function openModal(){
+  document.body.style.overflow="hidden";$("ov").hidden=false;
+  focusQ();
+  requestAnimationFrame(focusQ);
+  setTimeout(focusQ,60);
+  setTimeout(focusQ,200);
+}
 function closeModal(){$("ov").hidden=true;document.body.style.overflow="";$("imgmsg").textContent=""}
 function openAdd(){
   if(!user){toast("Sign in first to add questions");signIn();return}
@@ -360,20 +365,48 @@ $("save").onclick=function(){
   toast(added?"Question added":"Changes saved");
 };
 
+/* ---------- images (saved inside the note itself, no Firebase Storage needed) ---------- */
 function setImg(u){curImg=u;$("prev").innerHTML=u?'<div class="pv"><img src="'+esc(u)+'" alt=""><button type="button" id="rmimg">Remove image</button></div>':"";$("addimg").textContent=u?"Change image":"Add image"}
-function shrink(f){return new Promise(function(res,rej){var fr=new FileReader();fr.onerror=rej;fr.onload=function(){var im=new Image();im.onerror=rej;im.onload=function(){var s=Math.min(1,1400/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);c.toBlob(function(b){b?res(b):rej()},"image/jpeg",.85)};im.src=fr.result};fr.readAsDataURL(f)})}
+function shrink(f){return new Promise(function(res,rej){
+  var fr=new FileReader();fr.onerror=rej;
+  fr.onload=function(){var im=new Image();im.onerror=rej;
+    im.onload=function(){
+      var max=1000,q=.78,out="";
+      for(var t=0;t<6;t++){
+        var s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");
+        c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
+        var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+        out=c.toDataURL("image/jpeg",q);
+        if(out.length<600000)break;
+        max=Math.round(max*.75);q=Math.max(.5,q-.08);
+      }
+      res(out);
+    };
+    im.src=fr.result;
+  };
+  fr.readAsDataURL(f);
+})}
+async function handleImage(f){
+  if(!f)return;
+  if(!user){toast("Sign in first");signIn();return}
+  if(!/^image\//.test(f.type)){toast("That file is not an image");return}
+  $("imgmsg").textContent="Preparing image...";
+  try{setImg(await shrink(f));$("imgmsg").textContent=""}
+  catch(e){$("imgmsg").textContent="Could not read this image."}
+}
 $("addimg").onclick=function(){if(!user){toast("Sign in first");signIn();return}$("imgfile").click()};
 $("prev").onclick=function(e){if(e.target.id==="rmimg")setImg("")};
-$("imgfile").onchange=async function(){
-  var f=this.files[0];this.value="";if(!f||!user)return;
-  $("imgmsg").textContent="Uploading...";
-  try{
-    var blob=await shrink(f);
-    var ref=storage.ref("notebook-images/"+user.uid+"/"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+".jpg");
-    await ref.put(blob,{contentType:"image/jpeg"});
-    setImg(await ref.getDownloadURL());$("imgmsg").textContent="";
-  }catch(e){$("imgmsg").textContent="Upload failed ("+(e&&e.code||"error")+"). Check Storage is enabled."}
-};
+$("imgfile").onchange=function(){var f=this.files[0];this.value="";handleImage(f)};
+
+/* Ctrl+V: paste a copied image anywhere in the popup (answer box included) */
+$("ov").addEventListener("paste",function(e){
+  var its=(e.clipboardData&&e.clipboardData.items)||[];
+  for(var i=0;i<its.length;i++){
+    if(its[i].kind==="file"&&its[i].type.indexOf("image/")===0){
+      e.preventDefault();handleImage(its[i].getAsFile());toast("Image pasted");return;
+    }
+  }
+});
 
 drawAcct();render();
 </script>
