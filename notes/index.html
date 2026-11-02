@@ -372,7 +372,7 @@ function readURL(f){return new Promise(function(res,rej){var fr=new FileReader()
 function loadImg(u){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=rej;im.src=u})}
 async function prepare(f){
   var url=await readURL(f);
-  if(url.length<=LIMIT)return{url:url,msg:"Image added in original quality"};
+  if(url.length<=LIMIT)return{url:url,msg:"Original image kept untouched ("+Math.max(1,Math.round(f.size/1024))+" KB)"};
   /* too big for one note: first keep full size and only lower JPEG quality, shrink size only as a last resort */
   var im=await loadImg(url),scale=1,q=.95;
   for(var t=0;t<14;t++){
