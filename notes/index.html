@@ -326,13 +326,13 @@ $("list").onclick=function(e){
 };
 
 /* ---------- popup ---------- */
-function focusQ(){var q=$("q");try{q.focus({preventScroll:true})}catch(e){q.focus()}try{q.setSelectionRange(q.value.length,q.value.length)}catch(e){}}
+function focusA(){var a=$("a");try{a.focus({preventScroll:true})}catch(e){a.focus()}try{a.setSelectionRange(a.value.length,a.value.length)}catch(e){}}
 function openModal(){
   document.body.style.overflow="hidden";$("ov").hidden=false;
-  focusQ();
-  requestAnimationFrame(focusQ);
-  setTimeout(focusQ,60);
-  setTimeout(focusQ,200);
+  focusA();
+  requestAnimationFrame(focusA);
+  setTimeout(focusA,60);
+  setTimeout(focusA,200);
 }
 function closeModal(){$("ov").hidden=true;document.body.style.overflow="";$("imgmsg").textContent=""}
 function openAdd(){
@@ -365,34 +365,33 @@ $("save").onclick=function(){
   toast(added?"Question added":"Changes saved");
 };
 
-/* ---------- images (saved inside the note itself, no Firebase Storage needed) ---------- */
+/* ---------- images: kept in original quality (no resizing, no re-compressing) ---------- */
+var LIMIT=950000; /* Firestore allows about 1 MB per note */
 function setImg(u){curImg=u;$("prev").innerHTML=u?'<div class="pv"><img src="'+esc(u)+'" alt=""><button type="button" id="rmimg">Remove image</button></div>':"";$("addimg").textContent=u?"Change image":"Add image"}
-function shrink(f){return new Promise(function(res,rej){
-  var fr=new FileReader();fr.onerror=rej;
-  fr.onload=function(){var im=new Image();im.onerror=rej;
-    im.onload=function(){
-      var max=1000,q=.78,out="";
-      for(var t=0;t<6;t++){
-        var s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");
-        c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
-        var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
-        out=c.toDataURL("image/jpeg",q);
-        if(out.length<600000)break;
-        max=Math.round(max*.75);q=Math.max(.5,q-.08);
-      }
-      res(out);
-    };
-    im.src=fr.result;
-  };
-  fr.readAsDataURL(f);
-})}
+function readURL(f){return new Promise(function(res,rej){var fr=new FileReader();fr.onerror=rej;fr.onload=function(){res(fr.result)};fr.readAsDataURL(f)})}
+function loadImg(u){return new Promise(function(res,rej){var im=new Image();im.onload=function(){res(im)};im.onerror=rej;im.src=u})}
+async function prepare(f){
+  var url=await readURL(f);
+  if(url.length<=LIMIT)return{url:url,msg:"Image added in original quality"};
+  /* too big for one note: first keep full size and only lower JPEG quality, shrink size only as a last resort */
+  var im=await loadImg(url),scale=1,q=.95;
+  for(var t=0;t<14;t++){
+    var c=document.createElement("canvas");
+    c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));
+    var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+    var out=c.toDataURL("image/jpeg",q);
+    if(out.length<=LIMIT)return{url:out,msg:scale<1?"Image was very large, so its size was reduced a little":"Image was large, saved as high-quality JPEG at full size"};
+    if(q>.81)q-=.05;else scale*=.85;
+  }
+  throw new Error("too big");
+}
 async function handleImage(f){
   if(!f)return;
   if(!user){toast("Sign in first");signIn();return}
   if(!/^image\//.test(f.type)){toast("That file is not an image");return}
-  $("imgmsg").textContent="Preparing image...";
-  try{setImg(await shrink(f));$("imgmsg").textContent=""}
-  catch(e){$("imgmsg").textContent="Could not read this image."}
+  $("imgmsg").textContent="Reading image...";
+  try{var r=await prepare(f);setImg(r.url);$("imgmsg").textContent="";toast(r.msg)}
+  catch(e){$("imgmsg").textContent="This image is too large to save. Try a smaller one."}
 }
 $("addimg").onclick=function(){if(!user){toast("Sign in first");signIn();return}$("imgfile").click()};
 $("prev").onclick=function(e){if(e.target.id==="rmimg")setImg("")};
